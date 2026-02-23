@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atelier — Task Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --obsidian: #0a0906;
+  --obsidian-2: #111009;
+  --obsidian-3: #1a1812;
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dim: #7a6430;
+  --ivory: #f5efe2;
+  --ivory-dim: #b5a98a;
+  --ivory-faint: rgba(245,239,226,0.06);
+  --border: rgba(201,168,76,0.2);
+  --border-strong: rgba(201,168,76,0.5);
+  --shadow-gold: 0 0 40px rgba(201,168,76,0.12);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body { height: 100%; }
+
+body {
+  min-height: 100vh;
+  background: var(--obsidian);
+  font-family: 'Cormorant Garamond', serif;
+  color: var(--ivory);
+  overflow-x: hidden;
+}
+
+/* ── BACKGROUND TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,168,76,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(201,168,76,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Subtle grain */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ── GEOMETRIC BACKGROUND MOTIF ── */
+.geo-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  overflow: hidden;
+}
+
+.geo-bg svg {
+  position: absolute;
+  opacity: 0.035;
+}
+
+.geo-bg .geo-center {
+  width: 700px; height: 700px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation: geoRotate 60s linear infinite;
+}
+
+@keyframes geoRotate {
+  from { transform: translate(-50%,-50%) rotate(0deg); }
+  to   { transform: translate(-50%,-50%) rotate(360deg); }
+}
+
+/* ── WRAPPER ── */
+.page {
+  position: relative; z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 24px 80px;
+}
+
+/* ── ORNAMENTAL DIVIDER ── */
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--gold);
+  width: 100%;
+  max-width: 640px;
+}
+
+.ornament-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+
+.ornament-diamond {
+  width: 6px; height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.ornament-diamond-sm {
+  width: 3px; height: 3px;
+  background: var(--gold-dim);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  max-width: 640px;
+  width: 100%;
+  margin-bottom: 48px;
+  animation: riseIn 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+
+.main-title {
+  font-family: 'Cinzel', serif;
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--ivory);
+  letter-spacing: 8px;
+  line-height: 1;
+  margin-bottom: 8px;
+  position: relative;
+  display: inline-block;
+}
+
+.main-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.subtitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--ivory-dim);
+  margin-top: 20px;
+  letter-spacing: 1px;
+}
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  max-width: 640px;
+  width: 100%;
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  background: var(--border);
+  animation: riseIn 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stat-cell {
+  background: var(--obsidian-2);
+  padding: 18px 20px;
+  text-align: center;
+}
+
+.stat-num {
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  color: var(--gold);
+  line-height: 1;
+  transition: all 0.4s;
+}
+
+.stat-lbl {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  margin-top: 4px;
+  font-family: 'Cinzel', serif;
+}
+
+/* ── PROGRESS ── */
+.progress-wrap {
+  max-width: 640px; width: 100%;
+  margin-bottom: 40px;
+  animation: riseIn 1.05s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.progress-title {
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  font-family: 'Cinzel', serif;
+}
+
+.progress-pct {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--gold);
+}
+
+.progress-track {
+  height: 2px;
+  background: rgba(201,168,76,0.12);
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-light));
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '◆';
+  position: absolute; right: -6px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  color: var(--gold-light);
+  filter: drop-shadow(0 0 6px var(--gold));
+}
+
+/* ── CARD ── */
+.card {
+  max-width: 640px; width: 100%;
+  border: 1px solid var(--border);
+  background: var(--obsidian-2);
+  margin-bottom: 0;
+  position: relative;
+  animation: riseIn 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Corner ornaments */
+.card::before, .card::after,
+.card .corner-br, .card .corner-bl {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  pointer-events: none;
+}
+
+.card::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--gold);
+  border-left: 2px solid var(--gold);
+}
+
+.card::after {
+  top: -1px; right: -1px;
+  border-top: 2px solid var(--gold);
+  border-right: 2px solid var(--gold);
+}
+
+/* ── INPUT SECTION ── */
+.input-section {
+  padding: 28px 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.input-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 14px;
+}
+
+.input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.task-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--ivory);
+  font-family: 'EB Garamond', serif;
+  font-size: 18px;
+  padding: 8px 0;
+  outline: none;
+  transition: border-color 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.task-input:focus { border-bottom-color: var(--gold); }
+.task-input::placeholder { color: var(--ivory-dim); font-style: italic; opacity: 0.5; }
+
+.priority-select {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ivory-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.3s, color 0.3s;
+  appearance: none;
+  text-align: center;
+}
+
+.priority-select:focus { border-color: var(--gold); color: var(--gold); }
+.priority-select option { background: var(--obsidian-3); color: var(--ivory); }
+
+.add-btn {
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  padding: 9px 22px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(201,168,76,0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.add-btn:hover {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  box-shadow: var(--shadow-gold);
+  color: var(--gold-light);
+}
+
+.add-btn:hover::before { opacity: 1; }
+
+/* Filter row */
+.filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-pill {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--ivory-dim);
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.filter-pill:hover { color: var(--gold-light); border-color: var(--border); }
+.filter-pill.active { color: var(--gold); border-color: var(--border-strong); background: rgba(201,168,76,0.06); }
+
+/* ── TASKS SECTION ── */
+.tasks-section { padding: 0; }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 32px 10px;
+}
+
+.section-head-text {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  white-space: nowrap;
+}
+
+.section-head-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* ── TASK ITEM ── */
+.task-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  padding: 16px 32px;
+  border-top: 1px solid rgba(201,168,76,0.06);
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+  animation: taskSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes taskSlide {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.task-item::before {
+  content: '';
+  position: absolute; left: 0; top: 20%; bottom: 20%; width: 2px;
+  background: var(--gold);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.task-item:hover { background: rgba(201,168,76,0.04); }
+.task-item:hover::before { opacity: 1; }
+
+.task-item.done { opacity: 0.45; }
+
+/* Check circle */
+.check-ring {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.check-ring:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+
+.check-ring.checked {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.check-ring.checked::after {
+  content: '';
+  width: 5px; height: 9px;
+  border: 1.5px solid var(--obsidian);
+  border-top: none; border-left: none;
+  transform: rotate(45deg) translateY(-1px);
+}
+
+/* Task body */
+.task-body { min-width: 0; padding: 0 16px; }
+
+.task-text {
+  font-family: 'EB Garamond', serif;
+  font-size: 18px;
+  color: var(--ivory);
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+  transition: all 0.25s;
+}
+
+.task-item.done .task-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--gold-dim);
+  color: var(--ivory-dim);
+}
+
+.task-footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.priority-dot {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  padding: 1px 8px;
+  border-radius: 0;
+  border: 1px solid;
+}
+
+.pri-low    { color: var(--ivory-dim); border-color: rgba(245,239,226,0.15); }
+.pri-medium { color: var(--gold-dim);  border-color: rgba(201,168,76,0.3); }
+.pri-high   { color: var(--gold);      border-color: var(--gold-dim); }
+.pri-urgent { color: #e8a87c;          border-color: rgba(232,168,124,0.5); }
+
+.task-time {
+  font-size: 11px;
+  color: var(--ivory-faint);
+  color: rgba(181,169,138,0.4);
+  font-style: italic;
+}
+
+/* Actions */
+.task-actions {
+  display: flex; gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.task-item:hover .task-actions { opacity: 1; }
+
+.act-btn {
+  width: 28px; height: 28px;
+  background: none;
+  border: 1px solid rgba(201,168,76,0.2);
+  color: var(--ivory-dim);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+
+.act-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+.act-btn.del:hover { border-color: #c0392b; color: #e07060; background: rgba(192,57,43,0.08); }
+
+/* ── EMPTY STATE ── */
+.empty {
+  padding: 60px 32px;
+  text-align: center;
+}
+
+.empty-ornament {
+  font-size: 28px;
+  color: var(--gold-dim);
+  margin-bottom: 16px;
+  letter-spacing: 8px;
+}
+
+.empty-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-style: italic;
+  color: var(--ivory-dim);
+  opacity: 0.5;
+}
+
+/* ── FOOTER CARD ── */
+.footer-card {
+  max-width: 640px; width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border: 1px solid var(--border);
+  border-top: none;
+  background: var(--obsidian-3);
+  animation: riseIn 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.footer-card::before, .footer-card::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  pointer-events: none;
+}
+
+.footer-card::before { bottom: -1px; left: -1px; border-bottom: 2px solid var(--gold); border-left: 2px solid var(--gold); }
+.footer-card::after  { bottom: -1px; right: -1px; border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold); }
+
+.footer-note {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--ivory-dim);
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.footer-actions { display: flex; gap: 10px; }
+
+.ghost-btn {
+  background: none;
+  border: none;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ivory-dim);
+  cursor: pointer;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.ghost-btn:hover { color: var(--gold); border-bottom-color: var(--gold-dim); opacity: 1; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(30px);
+  z-index: 100;
+  background: var(--obsidian-3);
+  border: 1px solid var(--border-strong);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+  box-shadow: var(--shadow-gold);
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── DATE ── */
+.date-display {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--gold-dim);
+  text-align: center;
+  margin-bottom: 28px;
+  animation: riseIn 0.8s ease;
+}
+</style>
+</head>
+<body>
+
+<!-- Geometric background -->
+<div class="geo-bg">
+  <svg class="geo-center" viewBox="0 0 700 700" fill="none" stroke="#c9a84c" stroke-width="0.5">
+    <polygon points="350,10 690,190 690,510 350,690 10,510 10,190" stroke-width="0.8"/>
+    <polygon points="350,60 640,215 640,485 350,640 60,485 60,215"/>
+    <polygon points="350,120 590,245 590,455 350,580 110,455 110,245" stroke-width="0.4"/>
+    <circle cx="350" cy="350" r="280" stroke-width="0.4"/>
+    <circle cx="350" cy="350" r="220"/>
+    <circle cx="350" cy="350" r="160" stroke-width="0.4"/>
+    <line x1="350" y1="10" x2="350" y2="690" stroke-width="0.3"/>
+    <line x1="10" y1="350" x2="690" y2="350" stroke-width="0.3"/>
+    <line x1="100" y1="100" x2="600" y2="600" stroke-width="0.3"/>
+    <line x1="600" y1="100" x2="100" y2="600" stroke-width="0.3"/>
+  </svg>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="page">
+
+  <!-- Date -->
+  <div class="date-display" id="date-display"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="eyebrow">◆ &nbsp; Private Journal &nbsp; ◆</div>
+    <div class="main-title">Atelier</div>
+    <div class="subtitle">A refined record of things to be done</div>
+  </div>
+
+  <!-- Ornament -->
+  <div class="ornament" style="margin-bottom:28px">
+    <div class="ornament-line"></div>
+    <div class="ornament-diamond-sm"></div>
+    <div class="ornament-diamond"></div>
+    <div class="ornament-diamond-sm"></div>
+    <div class="ornament-line"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-cell">
+      <div class="stat-num" id="s-total">0</div>
+      <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="s-active" style="color:var(--ivory)">0</div>
+      <div class="stat-lbl">Pending</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="s-done" style="color:var(--gold-light)">0</div>
+      <div class="stat-lbl">Complete</div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" style="margin-top:16px">
+    <div class="progress-header">
+      <span class="progress-title">Completion</span>
+      <span class="progress-pct" id="pct-text">—</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Main card -->
+  <div class="card">
+    <!-- Input -->
+    <div class="input-section">
+      <div class="input-label">New Entry</div>
+      <div class="input-row">
+        <input class="task-input" id="task-input" type="text" placeholder="What must be accomplished…" maxlength="140" />
+        <select class="priority-select" id="priority-sel">
+          <option value="medium">Moderate</option>
+          <option value="low">Minor</option>
+          <option value="high">Important</option>
+          <option value="urgent">Urgent</option>
+        </select>
+        <button class="add-btn" onclick="addTask()">Add</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-pill" onclick="setFilter('active',this)">Pending</button>
+        <button class="filter-pill" onclick="setFilter('done',this)">Completed</button>
+        <button class="filter-pill" onclick="setFilter('urgent',this)">Urgent</button>
+        <button class="filter-pill" onclick="setFilter('high',this)">Important</button>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="tasks-section" id="tasks-section"></div>
+  </div>
+
+  <!-- Footer card -->
+  <div class="footer-card">
+    <div class="footer-note" id="footer-note">No entries</div>
+    <div class="footer-actions">
+      <button class="ghost-btn" onclick="clearDone()">Clear completed</button>
+      <button class="ghost-btn" onclick="clearAll()" style="color:rgba(192,57,43,0.7)">Clear all</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Date display
+const now = new Date();
+document.getElementById('date-display').textContent = now.toLocaleDateString('en-GB', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+}).toUpperCase();
+
+// State
+let tasks = JSON.parse(localStorage.getItem('atelier-tasks') || '[]');
+let filter = 'all';
+
+const PRIORITY = { low: 'Minor', medium: 'Moderate', high: 'Important', urgent: 'Urgent' };
+const PRI_CLASS = { low: 'pri-low', medium: 'pri-medium', high: 'pri-high', urgent: 'pri-urgent' };
+
+function save() { localStorage.setItem('atelier-tasks', JSON.stringify(tasks)); }
+
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'Just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+function getFiltered() {
+  if (filter === 'active') return tasks.filter(t => !t.done);
+  if (filter === 'done')   return tasks.filter(t => t.done);
+  if (filter === 'urgent') return tasks.filter(t => t.priority === 'urgent');
+  if (filter === 'high')   return tasks.filter(t => t.priority === 'high');
+  return tasks;
+}
+
+function updateStats() {
+  const total = tasks.length;
+  const done  = tasks.filter(t => t.done).length;
+  const active = total - done;
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('s-total').textContent  = total;
+  document.getElementById('s-active').textContent = active;
+  document.getElementById('s-done').textContent   = done;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('pct-text').textContent = total ? pct + '%' : '—';
+  document.getElementById('footer-note').textContent = total
+    ? `${done} of ${total} entr${total===1?'y':'ies'} resolved`
+    : 'No entries recorded';
+}
+
+function render() {
+  const section = document.getElementById('tasks-section');
+  section.innerHTML = '';
+
+  const filtered = getFiltered();
+
+  if (!filtered.length) {
+    section.innerHTML = `
+      <div class="empty">
+        <div class="empty-ornament">◇ &nbsp; ◆ &nbsp; ◇</div>
+        <div class="empty-text">The page awaits your intentions</div>
+      </div>`;
+    updateStats(); return;
+  }
+
+  const active = filtered.filter(t => !t.done);
+  const done   = filtered.filter(t => t.done);
+
+  if (active.length) {
+    const hd = document.createElement('div');
+    hd.className = 'section-head';
+    hd.innerHTML = `<div class="section-head-text">Pending — ${active.length}</div><div class="section-head-line"></div>`;
+    section.appendChild(hd);
+    active.forEach(t => section.appendChild(buildItem(t)));
+  }
+
+  if (done.length) {
+    const hd = document.createElement('div');
+    hd.className = 'section-head';
+    hd.style.marginTop = '8px';
+    hd.innerHTML = `<div class="section-head-text">Completed — ${done.length}</div><div class="section-head-line"></div>`;
+    section.appendChild(hd);
+    done.forEach(t => section.appendChild(buildItem(t)));
+  }
+
+  updateStats();
+}
+
+function buildItem(task) {
+  const el = document.createElement('div');
+  el.className = 'task-item' + (task.done ? ' done' : '');
+  el.dataset.id = task.id;
+  el.innerHTML = `
+    <div class="check-ring ${task.done?'checked':''}" onclick="toggle(${task.id})"></div>
+    <div class="task-body">
+      <div class="task-text">${esc(task.text)}</div>
+      <div class="task-footer">
+        <span class="priority-dot ${PRI_CLASS[task.priority]}">${PRIORITY[task.priority]}</span>
+        <span class="task-time">${timeAgo(task.created)}</span>
+      </div>
+    </div>
+    <div class="task-actions">
+      <button class="act-btn del" onclick="del(${task.id})" title="Remove">✕</button>
+    </div>
+  `;
+  return el;
+}
+
+function addTask() {
+  const inp = document.getElementById('task-input');
+  const text = inp.value.trim();
+  if (!text) { shake(inp); return; }
+  const priority = document.getElementById('priority-sel').value;
+  tasks.unshift({ id: Date.now(), text, priority, done: false, created: Date.now() });
+  inp.value = '';
+  save(); render();
+  toast('Entry recorded');
+}
+
+function shake(el) {
+  el.style.transition = 'none';
+  el.style.borderBottomColor = '#c0392b';
+  el.style.transform = 'translateX(-4px)';
+  setTimeout(() => { el.style.transform = 'translateX(4px)'; }, 80);
+  setTimeout(() => { el.style.transform = '';   el.style.borderBottomColor = ''; el.style.transition = ''; }, 200);
+}
+
+function toggle(id) {
+  tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
+  save(); render();
+  const t = tasks.find(t => t.id === id);
+  toast(t?.done ? 'Completed' : 'Reopened');
+}
+
+function del(id) {
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el) {
+    el.style.transition = 'all 0.35s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(16px)';
+    setTimeout(() => { tasks = tasks.filter(t => t.id !== id); save(); render(); }, 340);
+  }
+}
+
+function clearDone() {
+  tasks = tasks.filter(t => !t.done);
+  save(); render();
+  toast('Completed entries cleared');
+}
+
+function clearAll() {
+  if (!confirm('Remove all entries from Atelier?')) return;
+  tasks = [];
+  save(); render();
+  toast('Journal cleared');
+}
+
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('task-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+setInterval(render, 60000);
+render();
+</script>
+</body>
+</html>
